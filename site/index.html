@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLY FLY — Journey to All World Corners</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,600&family=DM+Sans:wght@400;500;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0A1626;
+    --panel: #0E1D33;
+    --panel-soft: rgba(14, 29, 51, 0.88);
+    --ink: #EAF1FA;
+    --muted: #C3D0E4;
+    --accent: #F5D848;
+    --glass-bg: linear-gradient(160deg,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0.06) 48%,
+      rgba(255, 255, 255, 0.03) 100%);
+    --glass-border: rgba(255, 255, 255, 0.45);
+    --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.50);
+    --glass-filter: blur(3px) saturate(75%) brightness(1.25);
+    --display: 'Playfair Display', Georgia, serif;
+    --body: 'DM Sans', 'Segoe UI', sans-serif;
+    --hand: 'Caveat', 'Segoe Script', cursive;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--navy);
+    color: var(--ink);
+    font-family: var(--body);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ---- Scroll-scrubbed background ---- */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+  }
+  .bg-tint {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg,
+      rgba(10, 22, 38, 0.55) 0%,
+      rgba(10, 22, 38, 0.25) 45%,
+      rgba(10, 22, 38, 0.65) 100%);
+    pointer-events: none;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 32px; }
+
+  /* ---- Header ---- */
+  header {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    width: min(1060px, calc(100% - 32px));
+    padding: 10px 12px 10px 28px;
+    border-radius: 999px;
+    background: linear-gradient(120deg,
+      rgba(255, 255, 255, 0.30) 0%,
+      rgba(255, 255, 255, 0.18) 60%,
+      rgba(255, 255, 255, 0.12) 100%);
+    -webkit-backdrop-filter: blur(10px) saturate(75%) brightness(1.25);
+    backdrop-filter: blur(10px) saturate(75%) brightness(1.25);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.30),
+                0 10px 36px rgba(0, 0, 0, 0.30);
+    transition: background 0.4s ease, box-shadow 0.4s ease, top 0.4s ease;
+  }
+  header.scrolled {
+    top: 10px;
+    background: linear-gradient(120deg,
+      rgba(255, 255, 255, 0.36) 0%,
+      rgba(255, 255, 255, 0.24) 60%,
+      rgba(255, 255, 255, 0.16) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.30),
+                0 14px 44px rgba(0, 0, 0, 0.45);
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  nav { align-items: center; }
+  nav a {
+    padding: 8px 16px;
+    border-radius: 999px;
+    transition: color 0.25s ease, background 0.25s ease;
+  }
+  nav a:hover, nav a:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--ink);
+  }
+  nav a.nav-cta {
+    background: var(--accent);
+    color: var(--navy);
+    font-weight: 700;
+  }
+  nav a.nav-cta:hover, nav a.nav-cta:focus-visible {
+    background: #ffe97a;
+    color: var(--navy);
+  }
+  .logo {
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 600;
+    font-size: 1.35rem;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  nav { display: flex; gap: 6px; }
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.25s ease;
+  }
+  nav a:hover, nav a:focus-visible { color: var(--accent); }
+  nav a:focus-visible, .btn:focus-visible, .logo:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+
+  /* ---- Hero: content fitted inside the plane window ---- */
+  .hero {
+    position: relative;
+    height: 100vh;
+  }
+  .hero-fit {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 460px;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    transform-origin: center;
+  }
+  .hero-fit h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 42px;
+    line-height: 1.1;
+    text-shadow: 0 4px 40px rgba(0, 0, 0, 0.55);
+  }
+  .hero-fit h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .hero-fit p {
+    margin: 16px auto 26px;
+    max-width: 36ch;
+    color: var(--ink);
+    opacity: 0.9;
+    font-size: 15px;
+    line-height: 1.55;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
+  }
+  .btn {
+    display: inline-block;
+    font-family: var(--body);
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    background: transparent;
+    border: 1.5px solid var(--accent);
+    border-radius: 6px;
+    padding: 14px 36px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease, transform 0.3s ease;
+  }
+  .btn:hover {
+    background: var(--accent);
+    color: var(--navy);
+    transform: translateY(-2px);
+  }
+  .hero-fit .btn { padding: 12px 32px; font-size: 0.9rem; }
+
+  /* floating mini-cards on the hero sides */
+  .hero-side {
+    position: absolute;
+    z-index: 2;
+    display: block;
+    width: 210px;
+    padding: 20px 22px;
+    border-radius: 18px;
+    text-decoration: none;
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--glass-filter);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.35), var(--glass-highlight);
+    text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    animation: side-in 1s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+               side-bob 7s ease-in-out 1.2s infinite;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                border-color 0.35s ease;
+  }
+  .hero-side:hover, .hero-side:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), var(--glass-highlight);
+    animation-play-state: running, paused;
+  }
+  .hero-side:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .hero-side.left  { left: 4vw;  top: 56%; animation-delay: 0.5s, 1.7s; }
+  .hero-side.right { right: 4vw; top: 26%; animation-delay: 0.8s, 2s; }
+  .hero-side .tag {
+    display: inline-block;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--navy);
+    background: var(--accent);
+    border-radius: 999px;
+    padding: 4px 10px;
+    margin-bottom: 12px;
+    text-shadow: none;
+  }
+  .hero-side .name {
+    display: block;
+    font-family: var(--hand);
+    font-weight: 700;
+    font-size: 1.7rem;
+    line-height: 1.05;
+    color: var(--ink);
+  }
+  .hero-side .place {
+    display: block;
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-top: 4px;
+  }
+  .hero-side .rate {
+    display: inline-block;
+    margin-top: 12px;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  @keyframes side-in {
+    from { opacity: 0; transform: translateY(36px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes side-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-12px); }
+  }
+  @media (max-width: 1100px) {
+    .hero-side { display: none; }
+  }
+  .scroll-hint {
+    position: absolute;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    color: var(--muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    animation: hint-bob 2.4s ease-in-out infinite;
+  }
+  @keyframes hint-bob {
+    0%, 100% { transform: translate(-50%, 0); opacity: 0.7; }
+    50%      { transform: translate(-50%, 8px); opacity: 1; }
+  }
+  /* ---- Panels over the animation ---- */
+  .panel {
+    position: relative;
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--glass-filter);
+    border: 1px solid var(--glass-border);
+    border-radius: 28px;
+    padding: 72px 64px;
+    margin: 0 0 8vh;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.40), var(--glass-highlight);
+  }
+  .panel, .card { text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5); }
+
+  /* ---- Glass cards with 3D tilt + glare ---- */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+  .card {
+    position: relative;
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: var(--glass-filter);
+    backdrop-filter: var(--glass-filter);
+    border: 1px solid var(--glass-border);
+    border-radius: 22px;
+    padding: 36px 30px;
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.35), var(--glass-highlight);
+    transform-style: preserve-3d;
+    will-change: transform;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.35s ease;
+  }
+  .card:hover {
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.5), var(--glass-highlight);
+  }
+  .card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(255, 255, 255, 0.28), transparent 55%);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+  .card:hover::after { opacity: 1; }
+  .card h3 {
+    font-family: var(--hand);
+    font-weight: 700;
+    font-size: 2rem;
+    color: var(--ink);
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+  .card p { color: var(--muted); font-size: 0.94rem; }
+  .card .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+  }
+  .card .meta .days { color: var(--muted); font-size: 0.84rem; letter-spacing: 0.06em; text-transform: uppercase; }
+  .card .meta .price { font-family: var(--display); font-weight: 800; font-size: 1.3rem; color: var(--accent); }
+  .card .stars { color: var(--accent); letter-spacing: 0.2em; margin-bottom: 14px; font-size: 0.9rem; }
+  .card .who { margin-top: 20px; color: var(--ink); font-weight: 700; font-size: 0.9rem; }
+  .card .who small { display: block; color: var(--muted); font-weight: 400; margin-top: 2px; }
+
+  /* staggered card reveal */
+  .card-reveal {
+    opacity: 0;
+    transform: translateY(48px) scale(0.96);
+    transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--d, 0s);
+  }
+  .card-reveal.in { opacity: 1; transform: none; }
+  /* once revealed, restore snappy tilt transitions */
+  .card-reveal.in.settled {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.35s ease;
+    transition-delay: 0s;
+  }
+
+  /* section headings that sit directly over the sky */
+  .section-head {
+    text-align: center;
+    margin-bottom: 44px;
+  }
+  .section-head h2, .section-head .eyebrow {
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.65);
+  }
+  .section-block { margin-bottom: 8vh; }
+
+  /* stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    text-align: center;
+  }
+  .stat .num {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 2.8rem;
+    color: var(--accent);
+    line-height: 1.1;
+  }
+  .stat .label {
+    color: var(--muted);
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  /* about */
+  .eyebrow {
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(1.8rem, 3.6vw, 2.6rem);
+    line-height: 1.15;
+    margin-bottom: 20px;
+  }
+  .panel p { color: var(--muted); max-width: 62ch; }
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 48px;
+  }
+  .feature h3 {
+    font-size: 1.02rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .feature p { font-size: 0.92rem; }
+  .feature .mark {
+    font-family: var(--hand);
+    font-size: 1.9rem;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  /* window break — pure view of the animation */
+  .window-break {
+    height: 70vh;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 48px;
+  }
+  .window-break.finale { height: 90vh; }
+  .window-break span {
+    font-family: var(--hand);
+    font-weight: 600;
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    color: var(--ink);
+    text-shadow: 0 2px 24px rgba(0, 0, 0, 0.7);
+    transform: rotate(-2deg);
+  }
+
+  /* destinations */
+  .dest-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 48px;
+    justify-content: center;
+    margin-top: 40px;
+  }
+  .dest {
+    font-family: var(--hand);
+    font-weight: 700;
+    font-size: clamp(1.6rem, 3.4vw, 2.4rem);
+    color: var(--ink);
+    text-decoration: none;
+    transition: color 0.25s ease, transform 0.25s ease;
+  }
+  .dest:hover, .dest:focus-visible {
+    color: var(--accent);
+    transform: rotate(-2deg) scale(1.06);
+  }
+  .dest.active { color: var(--accent); }
+  .panel.center { text-align: center; }
+  .panel.center p { margin: 0 auto; }
+
+  /* cta + footer */
+  .cta .btn { margin-top: 32px; }
+  footer {
+    background: var(--navy);
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+    padding: 72px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 48px;
+    padding-bottom: 56px;
+  }
+  .footer-brand .logo { display: inline-block; margin-bottom: 14px; font-size: 1.3rem; }
+  .footer-brand p { max-width: 34ch; line-height: 1.7; }
+  footer h4 {
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .footer-links { list-style: none; }
+  .footer-links li { margin-bottom: 10px; }
+  .footer-links a {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.25s ease;
+  }
+  .footer-links a:hover, .footer-links a:focus-visible { color: var(--accent); }
+  .footer-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  .footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 22px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.82rem;
+  }
+  .footer-bottom a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .footer-bottom a:hover { text-decoration: underline; }
+  @media (max-width: 760px) {
+    .footer-grid { grid-template-columns: 1fr; gap: 36px; }
+    .footer-bottom { flex-direction: column; text-align: center; }
+  }
+
+  /* reveal on scroll */
+  .reveal {
+    opacity: 0;
+    transform: translateY(36px);
+    transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.in { opacity: 1; transform: none; }
+
+  @media (max-width: 760px) {
+    header { padding: 8px 8px 8px 20px; top: 10px; }
+    header.scrolled { top: 8px; }
+    .logo { font-size: 1.1rem; }
+    nav { gap: 0; }
+    nav a:not(.nav-cta) { display: none; }
+    nav a.nav-cta { padding: 8px 18px; font-size: 0.82rem; }
+    .panel { padding: 48px 28px; border-radius: 18px; }
+    .stats, .features, .cards { grid-template-columns: 1fr; }
+    .wrap { padding: 0 20px; }
+    .window-break { height: 52vh; padding-bottom: 32px; }
+    .window-break.finale { height: 70vh; }
+    .hero-fit p { max-width: 30ch; }
+    .card { padding: 30px 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .scroll-hint { animation: none; }
+    .btn, .dest, .card { transition: none; }
+    .card::after { display: none; }
+    .hero-side { animation: none; opacity: 1; }
+    .card-reveal { opacity: 1; transform: none; transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
+<div class="bg-tint" aria-hidden="true"></div>
+
+<header id="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="#top">FLY FLY</a>
+    <nav aria-label="Main">
+      <a href="#about">About</a>
+      <a href="#destinations">Destinations</a>
+      <a href="#tour">Exclusive Tour</a>
+      <a href="#reviews">Reviews</a>
+      <a class="nav-cta" href="#book">Book a Trip</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="hero-fit" id="hero-fit">
+      <h1>Journey to <em>All World</em> Corners</h1>
+      <p>Unlock the wonders of the world, your dream trip. Our tours offer a diverse range of destinations that cater to a wide variety of interests.</p>
+      <a class="btn" href="#book">Book a Trip</a>
+    </div>
+    <a class="hero-side left" href="#destinations">
+      <span class="tag">Popular now</span>
+      <span class="name">Hawaii Beach</span>
+      <span class="place">USA · Hawaii</span>
+      <span class="rate">★ 8.2</span>
+    </a>
+    <a class="hero-side right" href="#tour">
+      <span class="tag">Exclusive tour</span>
+      <span class="name">Arctic Wonders</span>
+      <span class="place">Iceland · Reykjavík</span>
+      <span class="rate">★ 7.6</span>
+    </a>
+    <div class="scroll-hint">Scroll to take off</div>
+  </section>
+
+  <div class="wrap">
+
+    <section class="panel reveal" aria-label="Our numbers">
+      <div class="stats">
+        <div class="stat">
+          <div class="num">10</div>
+          <div class="label">Years of experience</div>
+        </div>
+        <div class="stat">
+          <div class="num">5000</div>
+          <div class="label">Satisfied clients</div>
+        </div>
+        <div class="stat">
+          <div class="num">100</div>
+          <div class="label">Countries covered</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel reveal" id="about">
+      <div class="eyebrow">About us</div>
+      <h2>Travel experts who never stopped being travelers</h2>
+      <p>Our team is passionate about exploring the world and helping our clients do the same. Years in the industry mean strong relationships with suppliers around the globe — exclusive deals and insider access to some of the world's most incredible destinations.</p>
+      <div class="features">
+        <div class="feature">
+          <div class="mark">01</div>
+          <h3>Reliability</h3>
+          <p>Every itinerary is checked and confirmed before you fly. No surprises at the gate.</p>
+        </div>
+        <div class="feature">
+          <div class="mark">02</div>
+          <h3>Fast planning</h3>
+          <p>From first call to booked trip in days, not weeks — we handle the paperwork.</p>
+        </div>
+        <div class="feature">
+          <div class="mark">03</div>
+          <h3>Fair pricing</h3>
+          <p>Direct partner rates passed on to you. The first 50 bookings this season get 15% off.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <section class="window-break" aria-label="View from the plane window">
+    <span>your window seat is waiting…</span>
+  </section>
+
+  <div class="wrap">
+
+    <section class="section-block" id="tour">
+      <div class="section-head reveal">
+        <div class="eyebrow">Exclusive tours</div>
+        <h2>Trips we're proud of</h2>
+      </div>
+      <div class="cards">
+        <article class="card tilt card-reveal">
+          <h3>Bali Sunrise</h3>
+          <p>Temples in the morning mist, rice terraces and a volcano hike at dawn — ending on a quiet beach in Uluwatu.</p>
+          <div class="meta">
+            <span class="days">8 days</span>
+            <span class="price">from $1,290</span>
+          </div>
+        </article>
+        <article class="card tilt card-reveal">
+          <h3>Swiss Alps Express</h3>
+          <p>Panorama trains between lake towns, one night in a mountain lodge, and fondue you'll talk about for years.</p>
+          <div class="meta">
+            <span class="days">6 days</span>
+            <span class="price">from $1,850</span>
+          </div>
+        </article>
+        <article class="card tilt card-reveal">
+          <h3>Kenya Safari</h3>
+          <p>The Great Migration from a hot-air balloon, nights in a tented camp, and breakfast with the giraffes.</p>
+          <div class="meta">
+            <span class="days">9 days</span>
+            <span class="price">from $2,400</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel reveal" id="how">
+      <div class="eyebrow">How it works</div>
+      <h2>Three steps to takeoff</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="mark">01</div>
+          <h3>Tell us your dream</h3>
+          <p>A 15-minute call. Where you want to go, when, and what a perfect day looks like to you.</p>
+        </div>
+        <div class="feature">
+          <div class="mark">02</div>
+          <h3>We build the trip</h3>
+          <p>Flights, stays, guides and the little things — one plan, one price, ready in days.</p>
+        </div>
+        <div class="feature">
+          <div class="mark">03</div>
+          <h3>You fly</h3>
+          <p>We stay on call for the whole trip. If anything shifts, we fix it before you notice.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="wrap">
+
+    <section class="panel center reveal" id="destinations">
+      <div class="eyebrow">Destinations</div>
+      <h2>Where to next?</h2>
+      <p>Five continents, one call. Pick a direction and we'll do the rest.</p>
+      <div class="dest-list">
+        <a class="dest" href="#book">Australia</a>
+        <a class="dest" href="#book">Africa</a>
+        <a class="dest" href="#book">Europe</a>
+        <a class="dest active" href="#book">Asia</a>
+        <a class="dest" href="#book">New Zealand</a>
+      </div>
+    </section>
+
+    <section class="section-block" id="reviews">
+      <div class="section-head reveal">
+        <div class="eyebrow">Reviews</div>
+        <h2>Postcards from our clients</h2>
+      </div>
+      <div class="cards">
+        <article class="card tilt card-reveal">
+          <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+          <p>"Every connection just worked. We never once opened a map or queued for a ticket — it was all simply handled."</p>
+          <div class="who">Salma R. <small>Bali Sunrise, March 2026</small></div>
+        </article>
+        <article class="card tilt card-reveal">
+          <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+          <p>"They moved our whole itinerary two days forward when a storm hit — before we even heard about the storm."</p>
+          <div class="who">Omar &amp; Dina <small>Swiss Alps Express, January 2026</small></div>
+        </article>
+        <article class="card tilt card-reveal">
+          <div class="stars" aria-label="5 out of 5 stars">★★★★★</div>
+          <p>"The balloon over the Mara at sunrise was the single best hour of my life. Worth every pound. Book it."</p>
+          <div class="who">Nadia K. <small>Kenya Safari, June 2026</small></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel center cta reveal" id="book">
+      <div class="eyebrow">Ready when you are</div>
+      <h2>Don't waste your chance</h2>
+      <p>Tell us where you've always wanted to go — we'll build the trip around you.</p>
+      <a class="btn" href="mailto:hello@flyfly.travel">Book a Trip</a>
+    </section>
+
+  </div>
+
+  <section class="window-break finale" aria-label="Arrival view of the Eiffel Tower">
+    <span>…see you in Paris</span>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="logo">FLY FLY</span>
+        <p>A travel agency for people who collect moments, not stamps. Ten years of experience, a hundred countries covered — your window seat is waiting.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <ul class="footer-links">
+          <li><a href="#about">About us</a></li>
+          <li><a href="#destinations">Destinations</a></li>
+          <li><a href="#tour">Exclusive Tour</a></li>
+          <li><a href="#reviews">Reviews</a></li>
+          <li><a href="#book">Book a Trip</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul class="footer-links">
+          <li><a href="mailto:hello@flyfly.travel">hello@flyfly.travel</a></li>
+          <li><a href="tel:+201000000000">+20 100 000 0000</a></li>
+          <li>Sun–Thu, 9:00–18:00</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 FLY FLY Travel Agency — journey to all world corners.</span>
+      <span>Designed &amp; developed by <a href="https://abanoubmaurice.com/" target="_blank" rel="noopener">abanoub-maurice</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  /* ---------- Scroll-scrubbed plane-window background ---------- */
+  const FRAME_COUNT = 300;
+  const FRAME_PATH = i => `ezgif-8d0d7216c8263509-jpg/ezgif-frame-${String(i).padStart(3, '0')}.jpg`;
+  // Native frame size and porthole glass area within it
+  const FRAME_W = 600, FRAME_H = 338;
+  const PORT = { x: 190, y: 75, w: 225, h: 230 };
+
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const images = new Array(FRAME_COUNT);
+  let ready = false;
+  let current = 0;           // eased frame position
+  let target = 0;            // frame position from scroll
+  let lastDrawn = -1;
+
+  function preload() {
+    return new Promise(resolve => {
+      let loaded = 0;
+      for (let i = 0; i < FRAME_COUNT; i++) {
+        const img = new Image();
+        img.onload = img.onerror = () => {
+          if (++loaded === FRAME_COUNT) resolve();
+        };
+        img.src = FRAME_PATH(i + 1);
+        images[i] = img;
+      }
+    });
+  }
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    lastDrawn = -1;
+  }
+
+  // Shared view transform: cover scaling — the frame fills the viewport
+  function viewTransform() {
+    const cw = window.innerWidth, ch = window.innerHeight;
+    const scale = Math.max(cw / FRAME_W, ch / FRAME_H);
+    const dw = FRAME_W * scale, dh = FRAME_H * scale;
+    return { cw, ch, scale, dw, dh, dx: (cw - dw) / 2, dy: (ch - dh) / 2 };
+  }
+
+  function drawFrame(img, alpha) {
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+    const v = viewTransform();
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(img, v.dx, v.dy, v.dw, v.dh);
+  }
+
+  function render(pos) {
+    const idx = Math.floor(pos);
+    const frac = pos - idx;
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.globalAlpha = 1;
+    drawFrame(images[idx], 1);
+    if (frac > 0 && idx + 1 < FRAME_COUNT) drawFrame(images[idx + 1], frac);
+    ctx.globalAlpha = 1;
+  }
+
+  function updateTarget() {
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    const progress = maxScroll > 0 ? Math.min(Math.max(window.scrollY / maxScroll, 0), 1) : 0;
+    target = progress * (FRAME_COUNT - 1);
+  }
+
+  function tick() {
+    if (ready) {
+      // ease toward the scroll position for buttery scrubbing
+      current += (target - current) * (reduceMotion ? 1 : 0.14);
+      if (Math.abs(target - current) < 0.002) current = target;
+      if (Math.abs(current - lastDrawn) > 0.001) {
+        render(current);
+        lastDrawn = current;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------- Fit hero content inside the plane window ---------- */
+  const heroFit = document.getElementById('hero-fit');
+  const FIT_DESIGN_W = 460; // natural width of the hero block before scaling
+
+  function layoutHero() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    if (!heroFit || vw === 0 || vh === 0) return;
+    // same letterboxed transform the canvas uses
+    const v = viewTransform();
+    const cx = v.dx + (PORT.x + PORT.w / 2) * v.scale;
+    const cy = v.dy + (PORT.y + PORT.h / 2) * v.scale;
+    const portW = PORT.w * v.scale;
+    // fill ~82% of the glass width, clamped so text stays readable
+    let k = (portW * 0.82) / FIT_DESIGN_W;
+    k = Math.min(Math.max(k, 0.62), 1.4);
+    // never wider than the viewport
+    k = Math.min(k, (vw * 0.92) / FIT_DESIGN_W);
+    heroFit.style.left = cx + 'px';
+    heroFit.style.top = cy + 'px';
+    heroFit.style.transform = 'translate(-50%, -50%) scale(' + k + ')';
+  }
+
+  window.addEventListener('scroll', updateTarget, { passive: true });
+  window.addEventListener('resize', () => { resizeCanvas(); updateTarget(); layoutHero(); }, { passive: true });
+  layoutHero();
+
+  resizeCanvas();
+  preload().then(() => {
+    ready = true;
+    updateTarget();
+    current = target;
+    render(current);
+    lastDrawn = current;
+  });
+  requestAnimationFrame(tick);
+
+  /* ---------- Header state ---------- */
+  const header = document.getElementById('site-header');
+  function headerState() {
+    header.classList.toggle('scrolled', window.scrollY > 40);
+  }
+  window.addEventListener('scroll', headerState, { passive: true });
+  headerState();
+
+  /* ---------- 3D tilt + glass glare on cards ---------- */
+  if (!reduceMotion && window.matchMedia('(pointer: fine)').matches) {
+    document.querySelectorAll('.tilt').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width;
+        const py = (e.clientY - r.top) / r.height;
+        card.style.transform =
+          'perspective(800px) rotateX(' + ((0.5 - py) * 8).toFixed(2) + 'deg)' +
+          ' rotateY(' + ((px - 0.5) * 8).toFixed(2) + 'deg) translateY(-6px)';
+        card.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
+        card.style.setProperty('--my', (py * 100).toFixed(1) + '%');
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
+      });
+    });
+  }
+
+  /* ---------- Reveal on scroll ---------- */
+  const revealEls = document.querySelectorAll('.reveal');
+  const cardGrids = document.querySelectorAll('.cards');
+  if ('IntersectionObserver' in window && !reduceMotion) {
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    revealEls.forEach(el => io.observe(el));
+
+    // staggered reveal for card grids
+    const gridIo = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const cards = e.target.querySelectorAll('.card-reveal');
+        cards.forEach((card, i) => {
+          const delay = i * 0.15;
+          card.style.setProperty('--d', delay + 's');
+          card.classList.add('in');
+          // restore snappy tilt transitions after the reveal finishes
+          setTimeout(() => card.classList.add('settled'), (delay + 0.9) * 1000 + 50);
+        });
+        gridIo.unobserve(e.target);
+      });
+    }, { threshold: 0.2 });
+    cardGrids.forEach(grid => gridIo.observe(grid));
+  } else {
+    revealEls.forEach(el => el.classList.add('in'));
+    document.querySelectorAll('.card-reveal').forEach(el => el.classList.add('in', 'settled'));
+  }
+})();
+</script>
+
+</body>
+</html>
